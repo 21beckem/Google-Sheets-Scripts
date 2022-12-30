@@ -8,6 +8,13 @@ function columnToLetter(column) {
   }
   return letter;
 }
+Array.prototype.indexOf2d = function(item) {
+  for(var k = 0; k < this.length; k++){
+    if(JSON.stringify(this[k]) == JSON.stringify(item)){
+      return k;
+    }
+  }
+}
 function setGlobalVar(thisKey,thisValue) {
   PropertiesService.getScriptProperties().setProperty(thisKey, thisValue);
 }
@@ -53,22 +60,36 @@ function onEdit(e) {
       setGlobalVar('ApplyThroughFunctions', JSON.stringify(APfunctions));
       continue;
     }
+    if (e.range.getRow() < ss.getRange(m[1].ThisCellAddress).getRow()) { continue; }
+    e.range.setValue(undefined);
+
 
 
 
     // if all that's true, do the applying through
-    const toChangeTo = e.value;
-    e.range.setValue(undefined);
     const orgss = SpreadsheetApp.getActive().getSheetByName(m[1].THEREpageName);
+    SpreadsheetApp.flush();
     const buddyLoc1 = m[1].HEREcolumnToRefrenceTo + String(e.range.getRow());
+    let waiting = true;
+    while (waiting) {
+      if (ss.getRange(m[1].ThisCellAddress).getValue() == "#ERROR") {
+        SpreadsheetApp.flush();
+      } else {
+        waiting = false;
+      }
+    }
     const buddyVal = ss.getRange(buddyLoc1).getValue();
-    toast(buddyVal);
+    //toast(buddyVal);
 
     // get the ref col
+    const refC = orgss.getRange(m[1].THEREcolumnToRefrence + ':' + m[1].THEREcolumnToRefrence).getValues();
 
     // find buddyVal in that
+    const buddyLoc2 = refC.indexOf2d([buddyVal]) + 1;
+    //A1Print(ss, buddyLoc2 );
 
     // set corresponding columnToChange value
+    orgss.getRange(m[1].THEREcolumnToChange + String(buddyLoc2)).setValue(e.value);
 
     // dance!
   }
@@ -86,7 +107,8 @@ function ApplyThrough(ThisCellAddress, HEREcolumnToListenTo, HEREcolumnToRefrenc
     HEREcolumnToRefrenceTo : HEREcolumnToRefrenceTo,
     THEREpageName : THEREpageName,
     THEREcolumnToChange : THEREcolumnToChange,
-    THEREcolumnToRefrence : THEREcolumnToRefrence
+    THEREcolumnToRefrence : THEREcolumnToRefrence,
+    OLD_hereRefCol : []
   }
   setGlobalVar('ApplyThroughFunctions', JSON.stringify(currentFunctions));
 
