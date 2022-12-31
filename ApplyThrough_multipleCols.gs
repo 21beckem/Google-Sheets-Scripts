@@ -41,7 +41,7 @@ function toast(s) {
 function onEdit(e) {
   const ss = e.source.getActiveSheet();
   const APfunctions = JSON.parse(getGlobalVar('ApplyThroughFunctions') || '{}');
-  A1Print(ss, APfunctions);
+  //A1Print(ss, APfunctions);
 
   // check if the edited cell is on one of these pages
   let found = false;
