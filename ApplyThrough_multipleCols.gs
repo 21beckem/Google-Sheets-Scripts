@@ -1,3 +1,4 @@
+function cellA1ToIndex(e,r){r=0==(r=r||0)?0:1;var n=e.match(/(^[A-Z]+)|([0-9]+$)/gm);if(2!=n.length)throw new Error("Invalid cell reference");e=n[0];return{row:rowA1ToIndex(n[1],r),col:colA1ToIndex(e,r)}}function colA1ToIndex(e,r){if("string"!=typeof e||2<e.length)throw new Error("Expected column label.");r=0==(r=r||0)?0:1;var n="A".charCodeAt(0),o=e.charCodeAt(e.length-1)-n;return 2==e.length&&(o+=26*(e.charCodeAt(0)-n+1)),o+r}function rowA1ToIndex(e,r){return e-1+(r=0==(r=r||0)?0:1)}
 function columnToLetter(column) {
   var temp, letter = '';
   while (column > 0)
@@ -7,6 +8,15 @@ function columnToLetter(column) {
     column = (column - temp - 1) / 26;
   }
   return letter;
+}
+function letterToColumn(letter)
+{
+  var column = 0, length = letter.length;
+  for (var i = 0; i < length; i++)
+  {
+    column += (letter.charCodeAt(i) - 64) * Math.pow(26, length - i - 1);
+  }
+  return column;
 }
 Array.prototype.indexOf2d = function(item) {
   for(var k = 0; k < this.length; k++){
@@ -31,7 +41,7 @@ function toast(s) {
 function onEdit(e) {
   const ss = e.source.getActiveSheet();
   const APfunctions = JSON.parse(getGlobalVar('ApplyThroughFunctions') || '{}');
-  //A1Print(ss, APfunctions);
+  A1Print(ss, APfunctions);
 
   // check if the edited cell is on one of these pages
   let found = false;
@@ -48,7 +58,7 @@ function onEdit(e) {
   for (let i = 0; i < matches.length; i++) {
     const m = matches[i];
     // check if the edited cell is in one of the tracked coloums
-    if (m[1].HEREcolumnToListenTo.split(',').includes( columnToLetter( e.range.getColumn() ) ) ) {
+    if (m[1].HEREcolumnToListenTo.split(',').includes( columnToLetter( e.range.getColumn() - 1 ) ) ) {
       //toast('found right col and page. And: ' + e.value);
     } else { continue; }
 
@@ -70,6 +80,7 @@ function onEdit(e) {
     const orgss = SpreadsheetApp.getActive().getSheetByName(m[1].THEREpageName);
     SpreadsheetApp.flush();
     const buddyLoc1 = m[1].HEREcolumnToRefrenceTo + String(e.range.getRow());
+    toast(buddyLoc1);
     let waiting = true;
     while (waiting) {
       if (ss.getRange(m[1].ThisCellAddress).getValue() == "#ERROR") {
@@ -83,31 +94,41 @@ function onEdit(e) {
 
     // get the ref col
     const refC = orgss.getRange(m[1].THEREcolumnToRefrence + ':' + m[1].THEREcolumnToRefrence).getValues();
+    //toast( refC, 'A2');
 
     // find buddyVal in that
     const buddyLoc2 = refC.indexOf2d([buddyVal]) + 1;
-    //A1Print(ss, buddyLoc2 );
+    //toast( buddyLoc2, 'A3');
+
+    // get corresponding col to edit
+    const corCol = columnToLetter((e.range.getColumn() - m[1].ThisCellCoords.col) + letterToColumn(m[1].THEREfirstColOfData) - 1);
+    //toast(corCol);
 
     // set corresponding columnToChange value
-    orgss.getRange(m[1].THEREcolumnToChange + String(buddyLoc2)).setValue(e.value);
+    orgss.getRange(corCol + String(buddyLoc2)).setValue(e.value);
 
     // dance!
   }
 }
 
-function ApplyThrough(ThisCellAddress, HEREcolumnToListenTo, HEREcolumnToRefrenceTo, THEREpageName, THEREcolumnToChange, THEREcolumnToRefrence, Filter_Function) {
+function ApplyThrough(ThisCellAddress, HEREcolumnToListenTo, HEREcolumnToRefrenceTo, THEREpageName, THEREfirstColOfData, Filter_Function) {
   const HEREpageName = SpreadsheetApp.getActiveSheet().getName();
+  const ThisCellCoords = cellA1ToIndex(ThisCellAddress);
+  const ColLetterList = HEREcolumnToListenTo.split(',').map((el) => {
+      return columnToLetter(parseInt(el) + ThisCellCoords.col);
+  });
   
   const currentFunctions = JSON.parse(getGlobalVar('ApplyThroughFunctions') || '{}');
 
   currentFunctions["'" + HEREpageName + "'!" + ThisCellAddress] = {
-    HEREpageName : HEREpageName,
-    ThisCellAddress : ThisCellAddress,
-    HEREcolumnToListenTo : HEREcolumnToListenTo,
-    HEREcolumnToRefrenceTo : HEREcolumnToRefrenceTo,
-    THEREpageName : THEREpageName,
-    THEREcolumnToChange : THEREcolumnToChange,
-    THEREcolumnToRefrence : THEREcolumnToRefrence
+      HEREpageName : HEREpageName,
+      ThisCellAddress : ThisCellAddress,
+      ThisCellCoords : ThisCellCoords,
+      HEREcolumnToListenTo : ColLetterList.join(','),
+      HEREcolumnToRefrenceTo : columnToLetter(parseInt(HEREcolumnToRefrenceTo) + ThisCellCoords.col + 1),
+      THEREpageName : THEREpageName,
+      THEREfirstColOfData: THEREfirstColOfData,
+      THEREcolumnToRefrence : columnToLetter(letterToColumn(THEREfirstColOfData) + parseInt(HEREcolumnToRefrenceTo))
   }
   setGlobalVar('ApplyThroughFunctions', JSON.stringify(currentFunctions));
 
