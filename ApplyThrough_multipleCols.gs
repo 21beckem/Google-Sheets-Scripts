@@ -80,7 +80,7 @@ function onEdit(e) {
     const orgss = SpreadsheetApp.getActive().getSheetByName(m[1].THEREpageName);
     SpreadsheetApp.flush();
     const buddyLoc1 = m[1].HEREcolumnToRefrenceTo + String(e.range.getRow());
-    toast(buddyLoc1);
+    //toast(buddyLoc1);
     let waiting = true;
     while (waiting) {
       if (ss.getRange(m[1].ThisCellAddress).getValue() == "#ERROR") {
