@@ -107,8 +107,7 @@ function ApplyThrough(ThisCellAddress, HEREcolumnToListenTo, HEREcolumnToRefrenc
     HEREcolumnToRefrenceTo : HEREcolumnToRefrenceTo,
     THEREpageName : THEREpageName,
     THEREcolumnToChange : THEREcolumnToChange,
-    THEREcolumnToRefrence : THEREcolumnToRefrence,
-    OLD_hereRefCol : []
+    THEREcolumnToRefrence : THEREcolumnToRefrence
   }
   setGlobalVar('ApplyThroughFunctions', JSON.stringify(currentFunctions));
 
